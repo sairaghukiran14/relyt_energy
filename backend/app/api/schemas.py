@@ -47,3 +47,26 @@ class DayAheadResponse(BaseModel):
     actual_mwh: float | None
     forecast_mwh: float | None
     metrics: Metrics
+
+
+class GroupedMetric(BaseModel):
+    key: int
+    n: int
+    mae: float
+    rmse: float
+    bias: float
+
+
+class WindLevelMetric(BaseModel):
+    band: str
+    lo_mw: float
+    hi_mw: float
+    n: int
+    mae: float | None
+    rmse: float | None
+    bias: float | None
+
+
+class Histogram(BaseModel):
+    bins: list[float]
+    counts: list[int]

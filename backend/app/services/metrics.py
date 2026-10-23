@@ -110,3 +110,48 @@ def error_histogram(series: pd.DataFrame, bins: int = 20) -> dict:
         "bins": [float(e) for e in edges],
         "counts": [int(c) for c in counts],
     }
+
+
+# Wind-level bands, as fractions of the maximum actual output in the range.
+# Low  = bottom third of capacity seen, Medium = middle, High = top.
+_WIND_BANDS = (("low", 0.0, 1 / 3), ("medium", 1 / 3, 2 / 3), ("high", 2 / 3, 1.0))
+
+
+def metrics_by_wind_level(series: pd.DataFrame) -> list[dict]:
+    """MAE, RMSE, bias split by actual wind level (low / medium / high).
+
+    Bands are thirds of the maximum actual output observed in the range, so a
+    buyer can see whether the forecast is less trustworthy in high or low wind.
+    """
+    paired = _paired(series)
+    if paired.empty:
+        return []
+    max_actual = float(paired["actual_mw"].max())
+    if max_actual <= 0:
+        return []
+
+    out = []
+    for name, lo, hi in _WIND_BANDS:
+        lo_mw, hi_mw = lo * max_actual, hi * max_actual
+        # Top band is inclusive of the max; lower bands are half-open.
+        if name == "high":
+            band = paired[paired["actual_mw"] >= lo_mw]
+        else:
+            band = paired[(paired["actual_mw"] >= lo_mw) & (paired["actual_mw"] < hi_mw)]
+        if band.empty:
+            out.append({"band": name, "lo_mw": lo_mw, "hi_mw": hi_mw, "n": 0,
+                        "mae": None, "rmse": None, "bias": None})
+            continue
+        err = band["error_mw"].to_numpy()
+        out.append(
+            {
+                "band": name,
+                "lo_mw": lo_mw,
+                "hi_mw": hi_mw,
+                "n": int(len(band)),
+                "mae": float(np.mean(np.abs(err))),
+                "rmse": float(np.sqrt(np.mean(err**2))),
+                "bias": float(np.mean(err)),
+            }
+        )
+    return out

@@ -1,0 +1,7 @@
+# Vercel's @vercel/python runtime installs these for the serverless function.
+# Kept in sync with backend/pyproject.toml.
+fastapi>=0.115,<1
+sqlalchemy>=2.0,<2.1
+psycopg[binary]>=3.2,<4
+pandas>=2.2,<3
+numpy>=2,<3

@@ -2,7 +2,9 @@ import { useState } from "react";
 import { NavLink, Navigate, Route, Routes } from "react-router-dom";
 import type { Range } from "./api";
 import { TopBar } from "./TopBar";
+import { Accuracy } from "./pages/Accuracy";
 import { DayAhead } from "./pages/DayAhead";
+import { Methodology } from "./pages/Methodology";
 import { Overview } from "./pages/Overview";
 
 export default function App() {
@@ -21,6 +23,8 @@ export default function App() {
           Overview
         </NavLink>
         <NavLink to="/day-ahead">Day-ahead</NavLink>
+        <NavLink to="/accuracy">Accuracy</NavLink>
+        <NavLink to="/methodology">Methodology</NavLink>
       </nav>
 
       <Routes>
@@ -28,12 +32,22 @@ export default function App() {
           path="/"
           element={
             <>
-              <TopBar range={range} onChange={setRange} showMode={false} />
+              <TopBar range={range} onChange={setRange} />
               <Overview range={range} />
             </>
           }
         />
         <Route path="/day-ahead" element={<DayAhead />} />
+        <Route
+          path="/accuracy"
+          element={
+            <>
+              <TopBar range={range} onChange={setRange} />
+              <Accuracy range={range} />
+            </>
+          }
+        />
+        <Route path="/methodology" element={<Methodology />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>

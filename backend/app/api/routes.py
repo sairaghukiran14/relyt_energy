@@ -107,3 +107,53 @@ def dayahead(
         forecast_mwh=forecast_mwh,
         metrics=schemas.Metrics(**metrics_svc.compute_metrics(df)),
     )
+
+
+def _series_for(session, rng, mode, horizon_h) -> pd.DataFrame:
+    start, end = rng
+    return selection.get_series(session, start, end, mode=mode, horizon_h=horizon_h)
+
+
+@router.get("/metrics/by-horizon", response_model=list[schemas.GroupedMetric])
+def metrics_by_horizon(
+    rng: tuple[datetime, datetime] = Depends(deps.parse_range),
+    mode: str = Depends(deps.parse_mode),
+    horizon_h: float = Depends(deps.parse_horizon),
+    session: Session = Depends(get_session),
+) -> list[schemas.GroupedMetric]:
+    df = _series_for(session, rng, mode, horizon_h)
+    return [schemas.GroupedMetric(**g) for g in metrics_svc.metrics_by_horizon(df)]
+
+
+@router.get("/metrics/by-hour", response_model=list[schemas.GroupedMetric])
+def metrics_by_hour(
+    rng: tuple[datetime, datetime] = Depends(deps.parse_range),
+    mode: str = Depends(deps.parse_mode),
+    horizon_h: float = Depends(deps.parse_horizon),
+    session: Session = Depends(get_session),
+) -> list[schemas.GroupedMetric]:
+    df = _series_for(session, rng, mode, horizon_h)
+    return [schemas.GroupedMetric(**g) for g in metrics_svc.metrics_by_hour(df)]
+
+
+@router.get("/metrics/by-wind-level", response_model=list[schemas.WindLevelMetric])
+def metrics_by_wind_level(
+    rng: tuple[datetime, datetime] = Depends(deps.parse_range),
+    mode: str = Depends(deps.parse_mode),
+    horizon_h: float = Depends(deps.parse_horizon),
+    session: Session = Depends(get_session),
+) -> list[schemas.WindLevelMetric]:
+    df = _series_for(session, rng, mode, horizon_h)
+    return [schemas.WindLevelMetric(**g) for g in metrics_svc.metrics_by_wind_level(df)]
+
+
+@router.get("/errors/histogram", response_model=schemas.Histogram)
+def errors_histogram(
+    rng: tuple[datetime, datetime] = Depends(deps.parse_range),
+    mode: str = Depends(deps.parse_mode),
+    horizon_h: float = Depends(deps.parse_horizon),
+    bins: int = 20,
+    session: Session = Depends(get_session),
+) -> schemas.Histogram:
+    df = _series_for(session, rng, mode, horizon_h)
+    return schemas.Histogram(**metrics_svc.error_histogram(df, bins=bins))

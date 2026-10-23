@@ -47,7 +47,8 @@ export interface Range {
   horizonH: number;
 }
 
-function qs(range: Range): string {
+// Build the query string shared by the API calls. Exported for unit testing.
+export function qs(range: Range): string {
   const p = new URLSearchParams({
     start: range.start,
     end: range.end,
@@ -84,5 +85,56 @@ export function useDayAhead(date: string) {
   return useQuery({
     queryKey: ["dayahead", date],
     queryFn: () => getJSON<DayAheadResponse>(`/api/dayahead/${date}`),
+  });
+}
+
+export interface GroupedMetric {
+  key: number;
+  n: number;
+  mae: number;
+  rmse: number;
+  bias: number;
+}
+
+export interface WindLevelMetric {
+  band: string;
+  lo_mw: number;
+  hi_mw: number;
+  n: number;
+  mae: number | null;
+  rmse: number | null;
+  bias: number | null;
+}
+
+export interface Histogram {
+  bins: number[];
+  counts: number[];
+}
+
+export function useByHorizon(range: Range) {
+  return useQuery({
+    queryKey: ["by-horizon", range],
+    queryFn: () => getJSON<GroupedMetric[]>(`/api/metrics/by-horizon?${qs(range)}`),
+  });
+}
+
+export function useByHour(range: Range) {
+  return useQuery({
+    queryKey: ["by-hour", range],
+    queryFn: () => getJSON<GroupedMetric[]>(`/api/metrics/by-hour?${qs(range)}`),
+  });
+}
+
+export function useByWindLevel(range: Range) {
+  return useQuery({
+    queryKey: ["by-wind-level", range],
+    queryFn: () => getJSON<WindLevelMetric[]>(`/api/metrics/by-wind-level?${qs(range)}`),
+  });
+}
+
+export function useHistogram(range: Range) {
+  return useQuery({
+    queryKey: ["histogram", range],
+    queryFn: () => getJSON<Histogram>(`/api/errors/histogram?${qs(range)}&bins=20`),
   });
 }

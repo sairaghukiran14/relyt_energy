@@ -10,6 +10,7 @@ import {
 import type { Range } from "../api";
 import { useMetrics, useSeries } from "../api";
 import { Empty, ErrorState, Loading, MetricTile, fmt } from "../components";
+import { downloadCsv } from "../csv";
 
 function hhmm(iso: string): string {
   return new Date(iso).toLocaleString(undefined, {
@@ -103,6 +104,24 @@ export function Overview({ range }: { range: Range }) {
           </ResponsiveContainer>
         )}
         <p className="hint">Actual = solid blue, forecast = dashed orange. Times in UTC (= UK in January).</p>
+        {points.length > 0 && (
+          <button
+            onClick={() =>
+              downloadCsv(
+                "series.csv",
+                (series.data?.points ?? []).map((p) => ({
+                  start_time: p.start_time,
+                  actual_mw: p.actual_mw,
+                  forecast_mw: p.forecast_mw,
+                  publish_time: p.publish_time,
+                  error_mw: p.error_mw,
+                })),
+              )
+            }
+          >
+            Download CSV
+          </button>
+        )}
       </div>
     </div>
   );

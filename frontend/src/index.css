@@ -51,6 +51,15 @@ input, select, button {
 }
 button { cursor: pointer; }
 
+/* Visible keyboard focus for accessibility. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--actual);
+  outline-offset: 2px;
+}
+
 .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
 .tile {
   background: var(--panel);
@@ -73,6 +82,33 @@ button { cursor: pointer; }
 
 .hint { color: var(--muted); font-size: 13px; }
 .state { padding: 40px; text-align: center; color: var(--muted); }
+
+.tbl { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+.tbl th, .tbl td {
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+}
+.tbl th { color: var(--muted); font-weight: 600; font-size: 13px; }
+
+.card button {
+  margin-top: 12px;
+  background: var(--bg);
+  border: 1px solid var(--actual);
+  color: var(--actual);
+}
+.card button:hover { background: var(--panel); }
+
+.prose ul { margin: 8px 0; padding-left: 20px; }
+.prose li { margin: 4px 0; line-height: 1.5; }
+.prose code {
+  background: var(--bg);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+.prose p { line-height: 1.55; }
 
 .tip { cursor: help; border-bottom: 1px dotted var(--muted); }
 
