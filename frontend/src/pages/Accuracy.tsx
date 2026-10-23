@@ -9,38 +9,26 @@ import {
 } from "recharts";
 import type { GroupedMetric, Range } from "../api";
 import { useByHorizon, useByHour, useByWindLevel, useHistogram, useMetrics } from "../api";
+import { ANIM, COLORS, ChartTooltip, axisProps } from "../chart";
 import { Empty, ErrorState, Loading, fmt } from "../components";
 import { downloadCsv } from "../csv";
 
-const tipStyle = { background: "var(--panel)", border: "1px solid var(--border)" };
-
-function GroupedBar({
-  data,
-  xLabel,
-  xUnit,
-}: {
-  data: GroupedMetric[];
-  xLabel: string;
-  xUnit?: string;
-}) {
+function GroupedBar({ data, xLabel, xUnit }: { data: GroupedMetric[]; xLabel: string; xUnit?: string }) {
   if (data.length === 0) return <Empty message="No data for this range." />;
   const rows = data.map((d) => ({ ...d, label: `${d.key}${xUnit ?? ""}` }));
   return (
     <ResponsiveContainer width="100%" height={280}>
-      <BarChart data={rows} margin={{ top: 8, right: 16, bottom: 20, left: 8 }}>
-        <CartesianGrid stroke="var(--border)" />
+      <BarChart data={rows} margin={{ top: 12, right: 16, bottom: 24, left: 8 }}>
+        <CartesianGrid stroke={COLORS.grid} vertical={false} />
         <XAxis
           dataKey="label"
-          stroke="var(--muted)"
-          label={{ value: xLabel, position: "insideBottom", offset: -8, fill: "var(--muted)" }}
+          {...axisProps}
+          label={{ value: xLabel, position: "insideBottom", offset: -10, fill: COLORS.axis, fontSize: 12 }}
         />
-        <YAxis stroke="var(--muted)" width={56} />
-        <Tooltip
-          formatter={(v: number, name) => [`${fmt(v)} MW`, name]}
-          contentStyle={tipStyle}
-        />
-        <Bar dataKey="mae" name="MAE" fill="var(--error)" />
-        <Bar dataKey="bias" name="Bias" fill="var(--forecast)" />
+        <YAxis width={56} unit=" MW" {...axisProps} />
+        <Tooltip content={<ChartTooltip />} cursor={{ fill: "rgba(31,111,214,0.06)" }} />
+        <Bar dataKey="mae" name="MAE" fill={COLORS.accent} radius={[3, 3, 0, 0]} {...ANIM} />
+        <Bar dataKey="bias" name="Bias" fill={COLORS.forecast} radius={[3, 3, 0, 0]} {...ANIM} />
       </BarChart>
     </ResponsiveContainer>
   );
@@ -74,33 +62,24 @@ export function Accuracy({ range }: { range: Range }) {
 
   return (
     <div className="page">
-      <div className="card">
+      <h1 className="page-title">Accuracy analysis</h1>
+      <p className="page-sub">Where the forecast drifts — by horizon, time of day, and wind level.</p>
+
+      <div className="card rise">
         <h2>Error by forecast horizon</h2>
-        <p className="hint">How accuracy changes with lead time. MAE (teal) and bias (orange).</p>
-        {byHorizon.isLoading ? (
-          <Loading />
-        ) : byHorizon.error ? (
-          <ErrorState error={byHorizon.error} />
-        ) : (
-          <GroupedBar data={byHorizon.data!} xLabel="Horizon (hours)" xUnit="h" />
-        )}
+        <p className="hint">How accuracy changes with lead time. MAE (teal) and bias (amber).</p>
+        {byHorizon.isLoading ? <Loading /> : byHorizon.error ? <ErrorState error={byHorizon.error} /> : <GroupedBar data={byHorizon.data!} xLabel="Horizon (hours)" xUnit="h" />}
       </div>
 
-      <div className="card">
+      <div className="card rise" style={{ animationDelay: "0.06s" }}>
         <h2>Error by hour of day</h2>
         <p className="hint">Times in UTC (= UK in January).</p>
-        {byHour.isLoading ? (
-          <Loading />
-        ) : byHour.error ? (
-          <ErrorState error={byHour.error} />
-        ) : (
-          <GroupedBar data={byHour.data!} xLabel="Hour of day" />
-        )}
+        {byHour.isLoading ? <Loading /> : byHour.error ? <ErrorState error={byHour.error} /> : <GroupedBar data={byHour.data!} xLabel="Hour of day" />}
       </div>
 
-      <div className="card">
+      <div className="card rise" style={{ animationDelay: "0.12s" }}>
         <h2>Error histogram</h2>
-        <p className="hint">Distribution of forecast − actual (MW). Right of zero = forecast too high.</p>
+        <p className="hint">Distribution of forecast − actual. Right of zero = forecast too high.</p>
         {hist.isLoading ? (
           <Loading />
         ) : hist.error ? (
@@ -112,27 +91,30 @@ export function Accuracy({ range }: { range: Range }) {
             <ResponsiveContainer width="100%" height={260}>
               <BarChart
                 data={histRows.map((r) => ({ ...r, mid: Math.round((r.from_mw + r.to_mw) / 2) }))}
-                margin={{ top: 8, right: 16, bottom: 20, left: 8 }}
+                margin={{ top: 12, right: 16, bottom: 24, left: 8 }}
               >
-                <CartesianGrid stroke="var(--border)" />
+                <CartesianGrid stroke={COLORS.grid} vertical={false} />
                 <XAxis
                   dataKey="mid"
-                  stroke="var(--muted)"
-                  label={{ value: "Error (MW)", position: "insideBottom", offset: -8, fill: "var(--muted)" }}
+                  {...axisProps}
+                  label={{ value: "Error (MW)", position: "insideBottom", offset: -10, fill: COLORS.axis, fontSize: 12 }}
                 />
-                <YAxis stroke="var(--muted)" width={56} />
-                <Tooltip contentStyle={tipStyle} formatter={(v: number) => [v, "Count"]} />
-                <Bar dataKey="count" name="Count" fill="var(--actual)" />
+                <YAxis width={56} {...axisProps} />
+                <Tooltip
+                  content={<ChartTooltip unit="" labelFormat={(v) => `~${fmt(Number(v))} MW`} />}
+                  cursor={{ fill: "rgba(31,111,214,0.06)" }}
+                />
+                <Bar dataKey="count" name="Count" fill={COLORS.actual} radius={[3, 3, 0, 0]} {...ANIM} />
               </BarChart>
             </ResponsiveContainer>
-            <button onClick={() => downloadCsv("error-histogram.csv", histRows)}>
-              Download CSV
+            <button className="btn-sm" onClick={() => downloadCsv("error-histogram.csv", histRows)}>
+              ↓ Download CSV
             </button>
           </>
         )}
       </div>
 
-      <div className="card">
+      <div className="card rise" style={{ animationDelay: "0.18s" }}>
         <h2>Error percentiles</h2>
         <table className="tbl">
           <thead>
@@ -150,12 +132,12 @@ export function Accuracy({ range }: { range: Range }) {
             ))}
           </tbody>
         </table>
-        <button onClick={() => downloadCsv("error-percentiles.csv", percentileRows)}>
-          Download CSV
+        <button className="btn-sm" onClick={() => downloadCsv("error-percentiles.csv", percentileRows)}>
+          ↓ Download CSV
         </button>
       </div>
 
-      <div className="card">
+      <div className="card rise" style={{ animationDelay: "0.24s" }}>
         <h2>Error by wind level</h2>
         <p className="hint">Actual output split into thirds of the month's peak.</p>
         {byWind.isLoading ? (

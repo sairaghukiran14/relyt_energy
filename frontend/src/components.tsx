@@ -1,26 +1,31 @@
 import type { ReactNode } from "react";
 
+export function InfoTip({ text }: { text: string }) {
+  return (
+    <span className="info" tabIndex={0} aria-label={text}>
+      i<span className="bubble">{text}</span>
+    </span>
+  );
+}
+
 export function MetricTile({
   label,
   value,
   unit,
   tip,
+  delay = 0,
 }: {
   label: string;
   value: ReactNode;
   unit?: string;
   tip?: string;
+  delay?: number;
 }) {
   return (
-    <div className="tile">
+    <div className="tile rise" style={{ animationDelay: `${delay}s` }}>
       <div className="label">
-        {tip ? (
-          <span className="tip" title={tip}>
-            {label}
-          </span>
-        ) : (
-          label
-        )}
+        {label}
+        {tip ? <InfoTip text={tip} /> : null}
       </div>
       <div className="value">
         {value}
@@ -31,7 +36,7 @@ export function MetricTile({
 }
 
 export function Loading() {
-  return <div className="state">Loading…</div>;
+  return <div className="state fade">Loading…</div>;
 }
 
 export function Empty({ message }: { message: string }) {

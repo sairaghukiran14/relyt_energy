@@ -12,10 +12,11 @@ import {
   YAxis,
 } from "recharts";
 import { useDayAhead } from "../api";
+import { ANIM, COLORS, ChartTooltip, axisProps } from "../chart";
 import { Empty, ErrorState, Loading, MetricTile, fmt } from "../components";
 import { MAX_DATE, MIN_DATE } from "../TopBar";
 
-function hh(iso: string): string {
+function hh(iso: string | number): string {
   return new Date(iso).toLocaleTimeString(undefined, {
     hour: "2-digit",
     minute: "2-digit",
@@ -44,21 +45,17 @@ export function DayAhead() {
       </div>
 
       <div className="page">
+        <h1 className="page-title">Day-ahead view</h1>
+        <p className="page-sub">What the buyer saw at the 11:00 D-1 cutoff, next to the actual.</p>
         {q.isLoading && <Loading />}
         {q.error && <ErrorState error={q.error} />}
-        {q.data && <DayAheadBody data={q.data} hh={hh} />}
+        {q.data && <DayAheadBody data={q.data} />}
       </div>
     </>
   );
 }
 
-function DayAheadBody({
-  data,
-  hh,
-}: {
-  data: NonNullable<ReturnType<typeof useDayAhead>["data"]>;
-  hh: (iso: string) => string;
-}) {
+function DayAheadBody({ data }: { data: NonNullable<ReturnType<typeof useDayAhead>["data"]> }) {
   const points = data.points.map((p) => ({
     t: p.start_time,
     actual: p.actual_mw,
@@ -72,22 +69,12 @@ function DayAheadBody({
   return (
     <>
       <div className="tiles">
-        <MetricTile label="Forecast total" value={fmt(data.forecast_mwh)} unit="MWh" />
-        <MetricTile label="Actual total" value={fmt(data.actual_mwh)} unit="MWh" />
-        <MetricTile
-          label="MAE this day"
-          value={fmt(data.metrics.mae)}
-          unit="MW"
-          tip="Mean absolute error across the day's hours"
-        />
-        <MetricTile
-          label="Coverage"
-          value={fmt(data.metrics.coverage * 100)}
-          unit="%"
-          tip="Share of target hours with a forecast at the 11:00 D-1 cutoff"
-        />
+        <MetricTile label="Forecast total" value={fmt(data.forecast_mwh)} unit="MWh" delay={0} />
+        <MetricTile label="Actual total" value={fmt(data.actual_mwh)} unit="MWh" delay={0.06} />
+        <MetricTile label="MAE this day" value={fmt(data.metrics.mae)} unit="MW" delay={0.12} tip="Mean absolute error across the day's hours." />
+        <MetricTile label="Coverage" value={fmt(data.metrics.coverage * 100)} unit="%" delay={0.18} tip="Share of target hours with a forecast at the cutoff." />
       </div>
-      <p className="hint">
+      <p className="hint" style={{ marginTop: 12 }}>
         Cutoff (gate closure): {new Date(data.cutoff).toISOString().replace(".000Z", "Z")}.{" "}
         {publishTimes.length === 1
           ? `Forecast published at ${publishTimes[0]!.replace(".000Z", "Z").replace("T", " ")}.`
@@ -100,67 +87,42 @@ function DayAheadBody({
         </div>
       ) : (
         <>
-          <div className="card">
-            <h2>Forecast at cutoff vs actual (MW)</h2>
+          <div className="card rise">
+            <h2>Forecast at cutoff vs actual</h2>
             <ResponsiveContainer width="100%" height={320}>
-              <ComposedChart data={points} margin={{ top: 8, right: 16, bottom: 8, left: 8 }}>
-                <CartesianGrid stroke="var(--border)" />
-                <XAxis dataKey="t" tickFormatter={hh} stroke="var(--muted)" minTickGap={30} />
-                <YAxis stroke="var(--muted)" width={64} />
+              <ComposedChart data={points} margin={{ top: 12, right: 16, bottom: 8, left: 8 }}>
+                <CartesianGrid stroke={COLORS.grid} vertical={false} />
+                <XAxis dataKey="t" tickFormatter={hh} minTickGap={34} {...axisProps} />
+                <YAxis width={64} unit=" MW" {...axisProps} />
                 <Tooltip
-                  labelFormatter={(v) => hh(String(v))}
-                  formatter={(val: number, name) => [`${fmt(val)} MW`, name]}
-                  contentStyle={{ background: "var(--panel)", border: "1px solid var(--border)" }}
+                  content={<ChartTooltip labelFormat={hh} />}
+                  cursor={{ stroke: COLORS.axis, strokeDasharray: "3 3" }}
                 />
-                <Line
-                  type="monotone"
-                  dataKey="actual"
-                  name="Actual"
-                  stroke="var(--actual)"
-                  dot={false}
-                  strokeWidth={2}
-                  connectNulls
-                />
-                <Line
-                  type="monotone"
-                  dataKey="forecast"
-                  name="Forecast"
-                  stroke="var(--forecast)"
-                  strokeDasharray="6 4"
-                  dot={false}
-                  strokeWidth={2}
-                  connectNulls
-                />
+                <Line type="monotone" dataKey="actual" name="Actual" stroke={COLORS.actual} dot={false} strokeWidth={2.5} activeDot={{ r: 4 }} connectNulls {...ANIM} />
+                <Line type="monotone" dataKey="forecast" name="Forecast" stroke={COLORS.forecast} strokeDasharray="6 4" dot={false} strokeWidth={2.5} activeDot={{ r: 4 }} connectNulls {...ANIM} />
               </ComposedChart>
             </ResponsiveContainer>
           </div>
 
-          <div className="card">
-            <h2>Error per hour (forecast − actual, MW)</h2>
+          <div className="card rise" style={{ animationDelay: "0.08s" }}>
+            <h2>Error per hour</h2>
+            <p className="hint">Positive (amber) = forecast too high, wind fell short. Negative (blue) = forecast too low.</p>
             <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={points} margin={{ top: 8, right: 16, bottom: 8, left: 8 }}>
-                <CartesianGrid stroke="var(--border)" />
-                <XAxis dataKey="t" tickFormatter={hh} stroke="var(--muted)" minTickGap={30} />
-                <YAxis stroke="var(--muted)" width={64} />
+              <BarChart data={points} margin={{ top: 12, right: 16, bottom: 8, left: 8 }}>
+                <CartesianGrid stroke={COLORS.grid} vertical={false} />
+                <XAxis dataKey="t" tickFormatter={hh} minTickGap={34} {...axisProps} />
+                <YAxis width={64} unit=" MW" {...axisProps} />
                 <Tooltip
-                  labelFormatter={(v) => hh(String(v))}
-                  formatter={(val: number) => [`${fmt(val)} MW`, "Error"]}
-                  contentStyle={{ background: "var(--panel)", border: "1px solid var(--border)" }}
+                  content={<ChartTooltip labelFormat={hh} unit="MW" />}
+                  cursor={{ fill: "rgba(31,111,214,0.06)" }}
                 />
-                <Bar dataKey="error" name="Error">
+                <Bar dataKey="error" name="Error" radius={[3, 3, 0, 0]} {...ANIM}>
                   {points.map((p, i) => (
-                    <Cell
-                      key={i}
-                      fill={(p.error ?? 0) >= 0 ? "var(--forecast)" : "var(--actual)"}
-                    />
+                    <Cell key={i} fill={(p.error ?? 0) >= 0 ? COLORS.forecast : COLORS.actual} />
                   ))}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
-            <p className="hint">
-              Positive (orange) = forecast too high, wind fell short (under-bought). Negative (blue)
-              = forecast too low.
-            </p>
           </div>
         </>
       )}

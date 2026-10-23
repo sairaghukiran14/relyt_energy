@@ -1,7 +1,9 @@
 export function Methodology() {
   return (
     <div className="page prose">
-      <div className="card">
+      <h1 className="page-title">Methodology</h1>
+      <p className="page-sub">How the forecast is selected and how each metric is defined.</p>
+      <div className="card rise">
         <h2>Data sources</h2>
         <p>
           Two public Elexon BMRS datasets, stored in UTC (January has no daylight saving, so UK

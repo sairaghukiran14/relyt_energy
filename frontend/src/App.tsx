@@ -4,8 +4,26 @@ import type { Range } from "./api";
 import { TopBar } from "./TopBar";
 import { Accuracy } from "./pages/Accuracy";
 import { DayAhead } from "./pages/DayAhead";
+import { Landing } from "./pages/Landing";
 import { Methodology } from "./pages/Methodology";
 import { Overview } from "./pages/Overview";
+
+function DashboardNav() {
+  return (
+    <nav className="nav">
+      <NavLink to="/overview" className="brand">
+        <span className="dot" />
+        Wind Forecast Monitor
+      </NavLink>
+      <div className="nav-links">
+        <NavLink to="/overview">Overview</NavLink>
+        <NavLink to="/day-ahead">Day-ahead</NavLink>
+        <NavLink to="/accuracy">Accuracy</NavLink>
+        <NavLink to="/methodology">Methodology</NavLink>
+      </div>
+    </nav>
+  );
+}
 
 export default function App() {
   const [range, setRange] = useState<Range>({
@@ -16,40 +34,48 @@ export default function App() {
   });
 
   return (
-    <>
-      <nav className="nav">
-        <strong style={{ marginRight: 16 }}>Wind Forecast Monitor</strong>
-        <NavLink to="/" end>
-          Overview
-        </NavLink>
-        <NavLink to="/day-ahead">Day-ahead</NavLink>
-        <NavLink to="/accuracy">Accuracy</NavLink>
-        <NavLink to="/methodology">Methodology</NavLink>
-      </nav>
+    <Routes>
+      <Route path="/" element={<Landing />} />
 
-      <Routes>
-        <Route
-          path="/"
-          element={
-            <>
-              <TopBar range={range} onChange={setRange} />
-              <Overview range={range} />
-            </>
-          }
-        />
-        <Route path="/day-ahead" element={<DayAhead />} />
-        <Route
-          path="/accuracy"
-          element={
-            <>
-              <TopBar range={range} onChange={setRange} />
-              <Accuracy range={range} />
-            </>
-          }
-        />
-        <Route path="/methodology" element={<Methodology />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </>
+      <Route
+        path="/overview"
+        element={
+          <>
+            <DashboardNav />
+            <TopBar range={range} onChange={setRange} />
+            <Overview range={range} />
+          </>
+        }
+      />
+      <Route
+        path="/day-ahead"
+        element={
+          <>
+            <DashboardNav />
+            <DayAhead />
+          </>
+        }
+      />
+      <Route
+        path="/accuracy"
+        element={
+          <>
+            <DashboardNav />
+            <TopBar range={range} onChange={setRange} />
+            <Accuracy range={range} />
+          </>
+        }
+      />
+      <Route
+        path="/methodology"
+        element={
+          <>
+            <DashboardNav />
+            <Methodology />
+          </>
+        }
+      />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
