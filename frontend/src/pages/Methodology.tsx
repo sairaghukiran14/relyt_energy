@@ -82,6 +82,27 @@ export function Methodology() {
           MAPE is deliberately not used: it explodes when actual wind is near zero.
         </p>
       </div>
+
+      <div className="card">
+        <h2>Reading the bias</h2>
+        <p>
+          In January 2026 the day-ahead forecast ran about 1.7 GW above actual output on average.
+          This is not a one-off weather miss: the lean is positive in every week of the month
+          (roughly +1.2 to +2.4 GW) and at every horizon, including about +1.5 GW for forecasts made
+          under 8 hours ahead.
+        </p>
+        <p>
+          A gap that does not shrink as the forecast gets closer to delivery points to a systematic
+          difference between the two datasets (for example, what generation each series counts)
+          rather than to forecast skill alone. We have not corrected for it and cannot confirm the
+          cause from these two datasets alone.
+        </p>
+        <p className="hint">
+          Practical reading: treat the median error (P50) as a standing discount on the forecast,
+          and the P90 shortfall as the extra margin on top. Bias is shown separately so it is
+          never hidden inside MAE.
+        </p>
+      </div>
     </div>
   );
 }
