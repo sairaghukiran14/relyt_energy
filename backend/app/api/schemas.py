@@ -9,6 +9,8 @@ class HealthResponse(BaseModel):
     status: str
     database: bool
     data_last_loaded: datetime | None
+    # Short reason when the DB check fails (no credentials), for ops diagnosis.
+    detail: str | None = None
 
 
 class SeriesPoint(BaseModel):

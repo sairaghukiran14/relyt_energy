@@ -5,9 +5,11 @@ from datetime import UTC, datetime, time, timedelta
 import pandas as pd
 from fastapi import APIRouter, Depends
 from sqlalchemy import func, select, text
+from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session
 
 from app.api import deps, schemas
+from app.config import database_url
 from app.db.models import ActualGeneration
 from app.db.session import get_session
 from app.services import metrics as metrics_svc
@@ -37,13 +39,24 @@ def _points(df: pd.DataFrame) -> list[schemas.SeriesPoint]:
     ]
 
 
+def _safe_target() -> str:
+    """driver@host/db for the configured DB — no username or password."""
+    try:
+        u = make_url(database_url())
+        return f"{u.drivername}@{u.host}/{u.database}"
+    except Exception:
+        return "unparseable DATABASE_URL"
+
+
 @router.get("/health", response_model=schemas.HealthResponse)
 def health(session: Session = Depends(get_session)) -> schemas.HealthResponse:
+    detail = None
     try:
         session.execute(text("SELECT 1"))
         db_ok = True
-    except Exception:
+    except Exception as exc:
         db_ok = False
+        detail = f"{type(exc).__name__}: {str(exc)[:180]} | target={_safe_target()}"
     last_loaded = None
     if db_ok:
         last_loaded = session.execute(select(func.max(ActualGeneration.loaded_at))).scalar()
@@ -51,6 +64,7 @@ def health(session: Session = Depends(get_session)) -> schemas.HealthResponse:
         status="ok" if db_ok else "degraded",
         database=db_ok,
         data_last_loaded=last_loaded,
+        detail=detail,
     )
 
 
