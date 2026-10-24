@@ -18,10 +18,12 @@ two-phase plan. **This repo implements Phase 1 and Phase 2.**
 - Computes error metrics: MAE, RMSE, bias, normalised MAE, P10/P50/P90/P99, max error,
   coverage, and the headline P90 shortfall ("safety margin"), plus breakdowns by
   horizon, by hour of day, by wind level, and an error histogram.
-- Four screens: **Overview** (metric tiles + actual-vs-forecast line chart, with the
-  mode toggle), **Day-ahead** (one delivery day at the cutoff, error bars per hour, day
-  totals in MWh), **Accuracy** (the breakdowns + a percentile table, each table
-  downloadable as CSV), and **Methodology** (data sources, cutoff rule, definitions).
+- A minimalist light-themed UI (responsive, no gradients): a **landing page** at `/`,
+  and a dashboard under `/overview` with four screens — **Overview** (metric tiles +
+  actual-vs-forecast line chart, with the mode toggle), **Day-ahead** (one delivery day
+  at the cutoff, error bars per hour, day totals in MWh), **Accuracy** (the breakdowns +
+  a percentile table, each table downloadable as CSV), and **Methodology** (data sources,
+  cutoff rule, definitions). Charts animate and share a custom tooltip.
 - Deploys to Vercel (React static + FastAPI serverless under `/api`, single origin) with
   Neon Postgres; GitHub Actions runs lint + tests on every push.
 
@@ -37,8 +39,9 @@ Then load the data once (in another terminal):
 docker compose exec backend uv run python ../scripts/fetch_elexon.py
 ```
 
-Open http://localhost:5173. The browser talks only to that origin; `/api` is proxied
-to the backend, so there is no CORS setup — the same single-origin model Vercel uses.
+Open http://localhost:5173 — the landing page is at `/` and the dashboard at `/overview`.
+The browser talks only to that origin; `/api` is proxied to the backend, so there is no
+CORS setup — the same single-origin model Vercel uses.
 
 ## Quick start (without Docker)
 
@@ -62,7 +65,7 @@ npm install
 npm run dev                                   # proxies /api to :8000
 ```
 
-Open http://localhost:5173.
+Open http://localhost:5173 (landing at `/`, dashboard at `/overview`).
 
 ## Data notes
 
@@ -124,13 +127,40 @@ relyt_energy/
   system_architecture.md
 ```
 
-## Deploying to Vercel
+## Deploying to Vercel + Neon
 
 One Vercel project serves the React build as a static site and the FastAPI app as a
-Python serverless function under `/api` (`api/index.py`, routed by `vercel.json`), so
-both share one origin. Set `DATABASE_URL` (a Neon pooled connection string) in the
-project's environment variables, then run migrations and load data against that database
-once. The app is read-only and never calls Elexon at request time.
+Python serverless function under `/api` (`api/index.py`, with `backend/**` bundled via
+`includeFiles`, routed by `vercel.json`), so both share one origin. The app is read-only
+and never calls Elexon at request time, so the database must be loaded once up front.
+
+**1. Neon.** Create a project and copy both connection strings:
+  - **direct** (host without `-pooler`) — for migrations and the data load;
+  - **pooled** (host with `-pooler`) — for the app at runtime.
+
+  Neon's pooled endpoint uses transaction-mode pooling, which can trip up Alembic and
+  psycopg prepared statements, so migrations go through the direct endpoint while the
+  serverless function uses the pooled one.
+
+**2. Load the database** (from your machine, against the **direct** string):
+
+```bash
+cd backend
+DATABASE_URL='<neon-direct-url>' uv run alembic upgrade head
+DATABASE_URL='<neon-direct-url>' uv run python ../scripts/fetch_elexon.py
+```
+
+**3. Import into Vercel.** Add New → Project → import this repo. Import it at the
+**repository root** — Vercel's monorepo detection may offer `frontend`, `backend` and
+`api` as separate projects; do **not** pick those (that breaks the single origin and
+`backend` isn't a standalone target). Leave **Root Directory** at the repo root and set
+**Framework Preset** to **Other** so `vercel.json` drives the build. Add the env var
+`DATABASE_URL` = your **pooled** string, then deploy.
+
+**4. Verify.** `https://<url>/api/health` should return `"database": true`, and the
+landing page should load at `/`. Note that the first request after idle is slow (the
+serverless function cold-starts pandas/numpy/psycopg and connects to Neon); warm requests
+are fast.
 
 ## AI tools
 
