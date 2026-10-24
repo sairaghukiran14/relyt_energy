@@ -1,5 +1,7 @@
-# Build the static site, then serve it with a tiny static server that proxies
-# /api to the backend (so the browser sees a single origin, like Vercel).
+# `build` stage: used by docker-compose, which runs the Vite dev server from it so that
+# /api is proxied to the backend (single origin, like Vercel).
+# Final stage: serves the static bundle only. It has NO /api proxy, so it needs the API
+# reachable on the same origin (e.g. behind a reverse proxy).
 FROM node:20-slim AS build
 WORKDIR /app
 COPY package.json package-lock.json* ./
@@ -12,8 +14,5 @@ WORKDIR /app
 RUN npm install -g serve@14.2.4
 COPY --from=build /app/dist ./dist
 EXPOSE 5173
-# serve handles SPA routing; the compose file sets the API proxy via nginx-style
-# rewrite is not needed because Vite dev proxy is only for local dev. In compose
-# the frontend talks to the backend service directly through the browser's /api
-# requests, which the reverse proxy (see docker-compose) routes.
+# serve -s handles SPA routing (falls back to index.html).
 CMD ["serve", "-s", "dist", "-l", "5173"]

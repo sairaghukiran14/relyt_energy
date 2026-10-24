@@ -8,6 +8,8 @@ using Elexon BMRS data (FUELHH actuals, WINDFOR forecasts).
 See [system_architecture.md](system_architecture.md) for the full design and the
 two-phase plan. **This repo implements Phase 1 and Phase 2.**
 
+**Live app:** https://relytenergy.vercel.app
+
 ## What it does
 
 - Downloads and loads one month of Elexon data into PostgreSQL (offline; the live app

@@ -5,6 +5,17 @@ import { defineConfig } from "vite";
 // origin (matching the single-origin Vercel setup in production: no CORS).
 export default defineConfig({
   plugins: [react()],
+  build: {
+    rollupOptions: {
+      output: {
+        // Split heavy vendor code so the app chunk stays small and caches separately.
+        manualChunks: {
+          react: ["react", "react-dom", "react-router-dom"],
+          charts: ["recharts"],
+        },
+      },
+    },
+  },
   server: {
     port: 5173,
     proxy: {
