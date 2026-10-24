@@ -38,7 +38,7 @@ docker compose up --build
 Then load the data once (in another terminal):
 
 ```bash
-docker compose exec backend uv run python ../scripts/fetch_elexon.py
+docker compose exec backend uv run python -m app.ingest.elexon
 ```
 
 Open http://localhost:5173 — the landing page is at `/` and the dashboard at `/overview`.
